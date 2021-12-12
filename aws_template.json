@@ -1,0 +1,399 @@
+{
+    "AWSTemplateFormatVersion": "2010-09-09",
+    "Metadata": {
+        "AWS::CloudFormation::Designer": {
+            "22d6059e-2608-4dc9-9988-4b6ec86ec6f7": {
+                "size": {
+                    "width": 60,
+                    "height": 60
+                },
+                "position": {
+                    "x": 270,
+                    "y": 110
+                },
+                "z": 0,
+                "embeds": []
+            },
+            "85404c78-11b5-4b6c-8044-fe47429bc1f7": {
+                "size": {
+                    "width": 60,
+                    "height": 60
+                },
+                "position": {
+                    "x": -110,
+                    "y": 160
+                },
+                "z": 0,
+                "embeds": []
+            },
+            "ec62d97c-23ac-4185-9b23-a695103e31e8": {
+                "size": {
+                    "width": 60,
+                    "height": 60
+                },
+                "position": {
+                    "x": 90,
+                    "y": 160
+                },
+                "z": 0,
+                "embeds": [],
+                "dependson": [
+                    "22d6059e-2608-4dc9-9988-4b6ec86ec6f7",
+                    "098017e0-64c6-452c-8012-cb81a1542e56"
+                ]
+            },
+            "8093adc9-3ad2-42c2-a745-9c1269a5c1c3": {
+                "size": {
+                    "width": 60,
+                    "height": 60
+                },
+                "position": {
+                    "x": -180,
+                    "y": 50
+                },
+                "z": 0,
+                "embeds": []
+            },
+            "a056261c-24e4-496d-9ead-c9299f033d4e": {
+                "size": {
+                    "width": 60,
+                    "height": 60
+                },
+                "position": {
+                    "x": -250,
+                    "y": 160
+                },
+                "z": 0,
+                "embeds": [],
+                "dependson": [
+                    "85404c78-11b5-4b6c-8044-fe47429bc1f7"
+                ]
+            },
+            "b6b753c1-3847-491b-88f2-39462775d6d9": {
+                "size": {
+                    "width": 60,
+                    "height": 60
+                },
+                "position": {
+                    "x": -10,
+                    "y": 160
+                },
+                "z": 0,
+                "embeds": []
+            },
+            "a04c7cf4-83e3-426f-ba60-3d1e0fcfc3a5": {
+                "size": {
+                    "width": 60,
+                    "height": 60
+                },
+                "position": {
+                    "x": 180,
+                    "y": 50
+                },
+                "z": 0,
+                "embeds": []
+            },
+            "098017e0-64c6-452c-8012-cb81a1542e56": {
+                "size": {
+                    "width": 60,
+                    "height": 60
+                },
+                "position": {
+                    "x": 270,
+                    "y": 200
+                },
+                "z": 0,
+                "embeds": []
+            }
+        }
+    },
+    "Resources": {
+        "PrecipitationTable": {
+            "Type": "AWS::DynamoDB::Table",
+            "Properties": {
+                "TableName": "data650-Precipitation",
+                "AttributeDefinitions": [
+                    {
+                        "AttributeName": "location",
+                        "AttributeType": "S"
+                    },
+                    {
+                        "AttributeName": "eventinfo",
+                        "AttributeType": "S"
+                    }
+                ],
+                "KeySchema": [
+                    {
+                        "AttributeName": "location",
+                        "KeyType": "HASH"
+                    },
+                    {
+                        "AttributeName": "eventinfo",
+                        "KeyType": "RANGE"
+                    }
+                ],
+                "ProvisionedThroughput": {
+                    "ReadCapacityUnits": 20,
+                    "WriteCapacityUnits": 20
+                }
+            },
+            "Metadata": {
+                "AWS::CloudFormation::Designer": {
+                    "id": "22d6059e-2608-4dc9-9988-4b6ec86ec6f7"
+                }
+            }
+        },
+        "WeatherKinesisStream": {
+            "Type": "AWS::Kinesis::Stream",
+            "Properties": {
+                "Name": "WeatherStream",
+                "ShardCount": 1
+            },
+            "Metadata": {
+                "AWS::CloudFormation::Designer": {
+                    "id": "85404c78-11b5-4b6c-8044-fe47429bc1f7"
+                }
+            }
+        },
+        "ProducerRole": {
+            "Type": "AWS::IAM::Role",
+            "Properties": {
+                "AssumeRolePolicyDocument": {
+                    "Version": "2012-10-17",
+                    "Statement": [
+                        {
+                            "Effect": "Allow",
+                            "Principal": {
+                                "Service": [
+                                    "lambda.amazonaws.com"
+                                ]
+                            },
+                            "Action": [
+                                "sts:AssumeRole"
+                            ]
+                        }
+                    ]
+                },
+                "Policies": [
+                    {
+                        "PolicyName": "kinesis-writer",
+                        "PolicyDocument": {
+                            "Version": "2012-10-17",
+                            "Statement": [
+                                {
+                                    "Effect": "Allow",
+                                    "Action": [
+                                        "kinesis:PutRecord",
+                                        "kinesis:PutRecords"
+                                    ],
+                                    "Resource": [
+                                        {
+                                            "Fn::GetAtt": [
+                                                "WeatherKinesisStream",
+                                                "Arn"
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    }
+                ],
+                "ManagedPolicyArns": [
+                    "arn:aws:iam::aws:policy/service-role/AWSLambdaKinesisExecutionRole"
+                ]
+            },
+            "Metadata": {
+                "AWS::CloudFormation::Designer": {
+                    "id": "8093adc9-3ad2-42c2-a745-9c1269a5c1c3"
+                }
+            }
+        },
+        "ConsumerLambda": {
+            "Type": "AWS::Lambda::Function",
+            "Properties": {
+                "PackageType": "Image",
+                "Timeout": 60,
+                "Code": {
+                    "ImageUri": "656328366359.dkr.ecr.us-east-1.amazonaws.com/weather-consumer-py:latest"
+                },
+                "Role": {
+                    "Fn::GetAtt": [
+                        "ConsumerRole",
+                        "Arn"
+                    ]
+                }
+            },
+            "Metadata": {
+                "AWS::CloudFormation::Designer": {
+                    "id": "ec62d97c-23ac-4185-9b23-a695103e31e8"
+                }
+            },
+            "DependsOn": [
+                "PrecipitationTable",
+                "TemperatureTable"
+            ]
+        },
+        "ProducerLambda": {
+            "Type": "AWS::Lambda::Function",
+            "Properties": {
+                "PackageType": "Image",
+                "FunctionName": "producer-lambda",
+                "Timeout": 60,
+                "Code": {
+                    "ImageUri": "656328366359.dkr.ecr.us-east-1.amazonaws.com/weather-producer-py:latest"
+                },
+                "Role": {
+                    "Fn::GetAtt": [
+                        "ProducerRole",
+                        "Arn"
+                    ]
+                }
+            },
+            "Metadata": {
+                "AWS::CloudFormation::Designer": {
+                    "id": "a056261c-24e4-496d-9ead-c9299f033d4e"
+                }
+            },
+            "DependsOn": [
+                "WeatherKinesisStream"
+            ]
+        },
+        "ConsumerEventSource": {
+            "Type": "AWS::Lambda::EventSourceMapping",
+            "Properties": {
+                "EventSourceArn": {
+                    "Fn::GetAtt": [
+                        "WeatherKinesisStream",
+                        "Arn"
+                    ]
+                },
+                "FunctionName": {
+                    "Fn::GetAtt": [
+                        "ConsumerLambda",
+                        "Arn"
+                    ]
+                },
+                "StartingPosition": "LATEST"
+            },
+            "Metadata": {
+                "AWS::CloudFormation::Designer": {
+                    "id": "b6b753c1-3847-491b-88f2-39462775d6d9"
+                }
+            }
+        },
+        "ConsumerRole": {
+            "Type": "AWS::IAM::Role",
+            "Properties": {
+                "AssumeRolePolicyDocument": {
+                    "Version": "2012-10-17",
+                    "Statement": [
+                        {
+                            "Effect": "Allow",
+                            "Principal": {
+                                "Service": [
+                                    "lambda.amazonaws.com"
+                                ]
+                            },
+                            "Action": [
+                                "sts:AssumeRole"
+                            ]
+                        }
+                    ]
+                },
+                "Policies": [
+                    {
+                        "PolicyName": "dynamodb-writer",
+                        "PolicyDocument": {
+                            "Version": "2012-10-17",
+                            "Statement": [
+                                {
+                                    "Effect": "Allow",
+                                    "Action": [
+                                        "dynamodb:BatchGetItem",
+                                        "dynamodb:GetItem",
+                                        "dynamodb:Query",
+                                        "dynamodb:Scan",
+                                        "dynamodb:BatchWriteItem",
+                                        "dynamodb:PutItem",
+                                        "dynamodb:UpdateItem"
+                                    ],
+                                    "Resource": [
+                                        {
+                                            "Fn::GetAtt": [
+                                                "PrecipitationTable",
+                                                "Arn"
+                                            ]
+                                        },
+                                        {
+                                            "Fn::GetAtt": [
+                                                "TemperatureTable",
+                                                "Arn"
+                                            ]
+                                        }
+                                    ]
+                                },
+                                {
+                                    "Effect": "Allow",
+                                    "Action": [
+                                        "logs:CreateLogStream",
+                                        "logs:PutLogEvents"
+                                    ],
+                                    "Resource": "arn:aws:logs:us-east-1:656328366359:*"
+                                },
+                                {
+                                    "Effect": "Allow",
+                                    "Action": "logs:CreateLogGroup",
+                                    "Resource": "*"
+                                }
+                            ]
+                        }
+                    }
+                ],
+                "ManagedPolicyArns": [
+                    "arn:aws:iam::aws:policy/service-role/AWSLambdaKinesisExecutionRole"
+                ]
+            },
+            "Metadata": {
+                "AWS::CloudFormation::Designer": {
+                    "id": "a04c7cf4-83e3-426f-ba60-3d1e0fcfc3a5"
+                }
+            }
+        },
+        "TemperatureTable": {
+            "Type": "AWS::DynamoDB::Table",
+            "Properties": {
+                "TableName": "data650-Temperature",
+                "AttributeDefinitions": [
+                    {
+                        "AttributeName": "location",
+                        "AttributeType": "S"
+                    },
+                    {
+                        "AttributeName": "eventinfo",
+                        "AttributeType": "S"
+                    }
+                ],
+                "KeySchema": [
+                    {
+                        "AttributeName": "location",
+                        "KeyType": "HASH"
+                    },
+                    {
+                        "AttributeName": "eventinfo",
+                        "KeyType": "RANGE"
+                    }
+                ],
+                "ProvisionedThroughput": {
+                    "ReadCapacityUnits": 20,
+                    "WriteCapacityUnits": 20
+                }
+            },
+            "Metadata": {
+                "AWS::CloudFormation::Designer": {
+                    "id": "098017e0-64c6-452c-8012-cb81a1542e56"
+                }
+            }
+        }
+    }
+}

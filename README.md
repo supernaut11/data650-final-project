@@ -1,1 +1,3 @@
-# data650-final-project
+# DATA650 Final Project
+
+
